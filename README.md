@@ -12,11 +12,17 @@ With its **interactive dashboard** and **real-time insights**, NutriScan Pro emp
 ## 🚀 Key Features
 
 ✅ **Barcode Scanning** – Retrieve food product info instantly via [Open Food Facts API](https://world.openfoodfacts.org/data)
+
 ✅ **Smart Health Scoring (0–100)** – Custom algorithm analyzing sugar, fats, salt, protein, fiber & additives
+
 ✅ **Interactive Dashboard** – Clean, modern UI with multiple analytical tabs
+
 ✅ **Ingredient Quality Analysis** – Color-coded grading for ingredient safety & nutrition quality
+
 ✅ **Nutritional Breakdown** – Full nutrient profile per 100g, with visual insights
+
 ✅ **Scan History** – Save & compare previously scanned products
+
 ✅ **Visual Analytics** – Interactive graphs, charts, and progress meters for easy understanding
 
 ---
