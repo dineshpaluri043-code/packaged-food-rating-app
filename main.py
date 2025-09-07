@@ -1,4 +1,5 @@
 # Import required libraries
+import streamlit as st
 import requests
 import re
 import textwrap
@@ -6,23 +7,20 @@ import time
 from datetime import datetime
 import pandas as pd
 from collections import OrderedDict
-import sys
-import os
-from colorama import init, Fore, Back, Style
 import math
 import json
-import webbrowser
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-import threading
-import ipywidgets as widgets
-from IPython.display import display, clear_output, HTML, Javascript
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import random
 
-# Initialize colorama for cross-platform colored text
-init(autoreset=True)
+# Set page configuration
+st.set_page_config(
+    page_title="NutriScan Pro",
+    page_icon="🍎",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # Product information retrieval function
 def get_product_info_openfoodfacts(barcode):
@@ -309,864 +307,586 @@ def calculate_health_score(product_info):
     
     return round(total_score), explanations, score_components
 
-# Completely New Dashboard Design
-class FoodScannerDashboard:
-    """Completely redesigned dashboard with a fresh new look"""
-    
-    def __init__(self, history=None):
-        self.history = history or []
-        self.current_product = None
-        self.tab_contents = {}
+# Custom CSS for styling
+def load_css():
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
         
-        # Setup the dashboard
-        self.setup_dashboard()
-    
-    def setup_dashboard(self):
-        """Setup the complete dashboard with all components"""
-        # Custom CSS for new professional styling
-        css_styles = """
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
-            
-            * {
-                font-family: 'Montserrat', sans-serif;
-                box-sizing: border-box;
-            }
-            
-            .dashboard-container {
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                min-height: 100vh;
-                padding: 20px;
-            }
-            
-            .dashboard-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 25px 30px;
-                border-radius: 20px;
-                margin-bottom: 30px;
-                text-align: center;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .dashboard-header::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-                transform: rotate(30deg);
-            }
-            
-            .dashboard-header h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
-                margin: 0 0 10px 0;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            .dashboard-header p {
-                font-size: 1.1rem;
-                opacity: 0.9;
-                margin: 0;
-            }
-            
-            .scan-section {
-                background: white;
-                padding: 25px;
-                border-radius: 20px;
-                margin-bottom: 30px;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-                text-align: center;
-            }
-            
-            .barcode-input {
-                padding: 16px 20px;
-                border: 2px solid #e0e6ed;
-                border-radius: 12px;
-                font-size: 16px;
-                width: 350px;
-                margin-right: 15px;
-                transition: all 0.3s ease;
-                outline: none;
-            }
-            
-            .barcode-input:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            .scan-button {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                padding: 16px 30px;
-                border-radius: 12px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            }
-            
-            .scan-button:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-            }
-            
-            .tabs-container {
-                background: white;
-                border-radius: 20px;
-                overflow: hidden;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            }
-            
-            .tabs-header {
-                display: flex;
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                padding: 0;
-                border-bottom: 1px solid #dee2e6;
-            }
-            
-            .tab-button {
-                padding: 18px 25px;
-                font-size: 16px;
-                font-weight: 600;
-                color: #6c757d;
-                background: none;
-                border: none;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                flex: 1;
-                text-align: center;
-            }
-            
-            .tab-button:hover {
-                color: #495057;
-                background: rgba(255, 255, 255, 0.5);
-            }
-            
-            .tab-button.active {
-                color: #667eea;
-                background: white;
-            }
-            
-            .tab-button.active::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 3px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-            
-            .tab-content {
-                padding: 30px;
-                min-height: 500px;
-            }
-            
-            .metric-circle {
-                width: 140px;
-                height: 140px;
-                border-radius: 50%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                margin: 15px;
-                position: relative;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-                background: white;
-                border: 5px solid;
-                transition: all 0.3s ease;
-            }
-            
-            .metric-circle:hover {
-                transform: translateY(-5px) scale(1.05);
-                box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-            }
-            
-            .metric-circle h3 {
-                font-size: 28px;
-                font-weight: 700;
-                margin: 0;
-            }
-            
-            .metric-circle p {
-                margin: 5px 0 0;
-                font-size: 14px;
-                color: #6c757d;
-            }
-            
-            .metrics-container {
-                display: flex;
-                justify-content: center;
-                flex-wrap: wrap;
-                margin: 30px 0;
-            }
-            
-            .info-card {
-                background: white;
-                padding: 25px;
-                border-radius: 18px;
-                margin-bottom: 25px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.06);
-                border-left: 5px solid #667eea;
-            }
-            
-            .info-card h3 {
-                color: #667eea;
-                margin-top: 0;
-                margin-bottom: 20px;
-                font-weight: 600;
-                font-size: 1.4rem;
-            }
-            
-            .two-column-layout {
-                display: flex;
-                gap: 30px;
-                margin: 25px 0;
-            }
-            
-            .column {
-                flex: 1;
-            }
-            
-            .nutrition-fact {
-                display: flex;
-                justify-content: space-between;
-                padding: 12px 0;
-                border-bottom: 1px solid #f1f3f4;
-            }
-            
-            .nutrition-fact:last-child {
-                border-bottom: none;
-            }
-            
-            .product-image {
-                width: 100%;
-                max-width: 280px;
-                border-radius: 18px;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-                border: 5px solid white;
-            }
-            
-            .score-excellent {
-                color: #28a745;
-            }
-            
-            .score-good {
-                color: #17a2b8;
-            }
-            
-            .score-fair {
-                color: #ffc107;
-            }
-            
-            .score-poor {
-                color: #fd7e14;
-            }
-            
-            .score-very-poor {
-                color: #dc3545;
-            }
-            
-            .ingredient-positive {
-                color: #28a745;
-                font-weight: 500;
-            }
-            
-            .ingredient-negative {
-                color: #dc3545;
-                font-weight: 500;
-            }
-            
-            .ingredient-neutral {
-                color: #6c757d;
-            }
-            
-            .history-item {
-                background: white;
-                padding: 20px;
-                border-radius: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-                transition: all 0.3s ease;
-                border-left: 4px solid #667eea;
-            }
-            
-            .history-item:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-            }
-            
-            .progress-ring {
-                transform: rotate(-90deg);
-            }
-            
-            .progress-ring-circle {
-                transition: stroke-dashoffset 0.5s;
-            }
-            
-            .section-title {
-                color: #667eea;
-                font-weight: 600;
-                margin-bottom: 25px;
-                padding-bottom: 15px;
-                border-bottom: 2px solid #f1f3f4;
-                font-size: 1.8rem;
-            }
-            
-            @media (max-width: 900px) {
-                .two-column-layout {
-                    flex-direction: column;
-                }
-                
-                .barcode-input {
-                    width: 100%;
-                    margin-right: 0;
-                    margin-bottom: 15px;
-                }
-                
-                .tabs-header {
-                    flex-direction: column;
-                }
-            }
-        </style>
-        """
-        
-        # Display custom CSS
-        display(HTML(css_styles))
-        
-        # Create main container
-        self.main_container = widgets.VBox(layout=widgets.Layout(width='100%', padding='0'))
-        
-        # Header
-        header_html = """
-        <div class="dashboard-header">
-            <h1>🍎 NutriScan Pro</h1>
-            <p>Advanced Food Intelligence & Nutritional Analysis</p>
-        </div>
-        """
-        header = widgets.HTML(value=header_html)
-        
-        # Barcode input section
-        self.barcode_input = widgets.Text(
-            placeholder='Enter product barcode...',
-            layout=widgets.Layout(width='350px', margin='0 15px 0 0')
-        )
-        
-        self.scan_button = widgets.Button(
-            description='Scan Product',
-            button_style='primary',
-            layout=widgets.Layout(width='150px', height='50px')
-        )
-        
-        self.scan_output = widgets.Output()
-        
-        # Create scan section
-        scan_section = widgets.VBox([
-            widgets.HTML(value="<h2 style='color: #667eea; margin-top: 0; text-align: center;'>Scan a Product</h2>"),
-            widgets.HBox([self.barcode_input, self.scan_button]),
-            self.scan_output
-        ], layout=widgets.Layout(
-            padding='25px',
-            margin='0 0 30px 0',
-            background='white',
-            border_radius='20px',
-            box_shadow='0 8px 20px rgba(0,0,0,0.08)'
-        ))
-        
-        # Create tabs
-        self.tab_outputs = {
-            'overview': widgets.Output(),
-            'analysis': widgets.Output(),
-            'ingredients': widgets.Output(),
-            'history': widgets.Output()
+        * {
+            font-family: 'Montserrat', sans-serif;
         }
         
-        tab_titles = ['Overview', 'Analysis', 'Ingredients', 'History']
-        self.tabs = widgets.Tab(children=[
-            self.tab_outputs['overview'],
-            self.tab_outputs['analysis'],
-            self.tab_outputs['ingredients'],
-            self.tab_outputs['history']
-        ])
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
         
-        for i, title in enumerate(tab_titles):
-            self.tabs.set_title(i, title)
+        .scan-section {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            text-align: center;
+        }
         
-        # Set up tab change event
-        self.tabs.observe(self.on_tab_change, names='selected_index')
+        .metric-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 15px;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            background: white;
+            border: 5px solid;
+        }
         
-        # Set up scan button event
-        self.scan_button.on_click(self.on_scan_click)
+        .info-card {
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+            border-left: 5px solid #667eea;
+        }
         
-        # Add to main container
-        self.main_container.children = [header, scan_section, self.tabs]
+        .nutrition-fact {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
         
-        # Display the dashboard
-        display(self.main_container)
+        .product-image {
+            width: 100%;
+            max-width: 280px;
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border: 5px solid white;
+        }
         
-        # Initialize first tab
-        self.render_overview_tab()
-    
-    def on_tab_change(self, change):
-        """Handle tab change event"""
-        tab_index = change['new']
-        if tab_index == 0:
-            self.render_overview_tab()
-        elif tab_index == 1:
-            self.render_analysis_tab()
-        elif tab_index == 2:
-            self.render_ingredients_tab()
-        elif tab_index == 3:
-            self.render_history_tab()
-    
-    def on_scan_click(self, b):
-        """Handle scan button click"""
-        with self.scan_output:
-            clear_output()
-            barcode = self.barcode_input.value
-            if not barcode:
-                print("Please enter a barcode")
-                return
-            
-            print(f"Scanning barcode: {barcode}...")
-            
-            # Get product information
-            product_info = get_product_info_openfoodfacts(barcode)
-            
-            if product_info.get('success', False):
-                # Calculate health score
-                health_score, explanations, score_components = calculate_health_score(product_info)
-                
-                # Add to history
-                self.history.append({
-                    'barcode': barcode,
-                    'name': product_info.get('name', 'Unknown'),
-                    'score': health_score,
-                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    **product_info
-                })
-                
-                self.current_product = {
-                    'info': product_info,
-                    'score': health_score,
-                    'explanations': explanations,
-                    'score_components': score_components
-                }
-                
-                print(f"Successfully scanned: {product_info.get('name', 'Unknown')}")
-                print(f"Health Score: {health_score}/100")
-                
-                # Refresh the current tab to show the new product
-                if self.tabs.selected_index == 0:
-                    self.render_overview_tab()
-                elif self.tabs.selected_index == 1:
-                    self.render_analysis_tab()
-                elif self.tabs.selected_index == 2:
-                    self.render_ingredients_tab()
-                elif self.tabs.selected_index == 3:
-                    self.render_history_tab()
-            else:
-                print(f"Error: {product_info.get('error', 'Unknown error')}")
-    
-    def render_overview_tab(self):
-        """Render the overview tab content"""
-        with self.tab_outputs['overview']:
-            clear_output()
-            
-            if not self.current_product:
-                display(HTML("""
-                <div style='text-align: center; padding: 40px;'>
-                    <h3>👆 Scan a product to get started</h3>
-                    <p>Enter a barcode above to analyze a food product</p>
-                </div>
-                """))
-                return
-            
-            product_info = self.current_product['info']
-            health_score = self.current_product['score']
-            
-            # Create metrics circles
-            nutriments = product_info.get('nutriments', {})
-            
-            metrics_html = f"""
-            <div class="metrics-container">
-                <div class="metric-circle" style="border-color: #667eea;">
-                    <h3 style="color: #667eea;">{health_score}/100</h3>
-                    <p>Health Score</p>
-                </div>
-                <div class="metric-circle" style="border-color: #3282b8;">
-                    <h3 style="color: #3282b8;">{product_info.get('nutrition_grade', 'N/A').upper()}</h3>
-                    <p>Nutrition Grade</p>
-                </div>
-                <div class="metric-circle" style="border-color: #bbe1fa;">
-                    <h3 style="color: #1b262c;">{len(product_info.get('additives', []))}</h3>
-                    <p>Additives</p>
-                </div>
-            </div>
-            """
-            
-            display(HTML(metrics_html))
-            
-            # Create two-column layout
-            col1, col2 = widgets.Output(), widgets.Output()
-            
-            with col1:
-                # Product information
-                display(HTML("""
-                <div class="info-card">
-                    <h3>Product Information</h3>
-                    <p><strong>Product:</strong> {}</p>
-                    <p><strong>Brand:</strong> {}</p>
-                    <p><strong>Category:</strong> {}</p>
-                    <p><strong>Barcode:</strong> {}</p>
-                    <p><strong>Data Source:</strong> {}</p>
-                </div>
-                """.format(
-                    product_info.get('name', 'Unknown'),
-                    product_info.get('brand', 'Unknown'),
-                    product_info.get('category', 'Unknown'),
-                    product_info.get('barcode', 'Unknown'),
-                    product_info.get('source', 'Open Food Facts')
-                )))
-                
-                # Health score interpretation
-                score_class = "score-excellent"
-                score_text = "Excellent"
-                if health_score < 80:
-                    score_class = "score-good"
-                    score_text = "Good"
-                if health_score < 60:
-                    score_class = "score-fair"
-                    score_text = "Fair"
-                if health_score < 40:
-                    score_class = "score-poor"
-                    score_text = "Poor"
-                if health_score < 20:
-                    score_class = "score-very-poor"
-                    score_text = "Very Poor"
-                
-                # Create a circular progress indicator using SVG
-                circumference = 2 * math.pi * 40
-                offset = circumference - (health_score / 100) * circumference
-                
-                display(HTML(f"""
-                <div class="info-card">
-                    <h3>Health Assessment</h3>
-                    <div style="display: flex; align-items: center;">
-                        <div style="position: relative; width: 100px; height: 100px; margin-right: 20px;">
-                            <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
-                                <circle class="progress-ring-circle" stroke="#ecf0f1" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
-                                <circle class="progress-ring-circle" stroke="#667eea" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" 
-                                        stroke-dasharray="{circumference} {circumference}" style="stroke-dashoffset: {offset}"/>
-                                <text x="50" y="55" font-size="20" text-anchor="middle" fill="#667eea" font-weight="bold">{health_score}</text>
-                            </svg>
-                        </div>
-                        <div>
-                            <p>This product has a <span class="{score_class}">{score_text}</span> nutritional quality score.</p>
-                            <p>Based on analysis of ingredients and nutritional content.</p>
-                        </div>
-                    </div>
-                </div>
-                """))
-            
-            with col2:
-                # Product image
-                image_url = product_info.get('image_url', '')
-                if image_url:
-                    display(HTML(f"""
-                    <div style='text-align: center; margin-bottom: 20px;'>
-                        <img src="{image_url}" alt="Product image" class="product-image">
-                    </div>
-                    """))
-                else:
-                    display(HTML("""
-                    <div style='text-align: center; background: #f8f9fa; padding: 50px; border-radius: 12px; margin-bottom: 20px;'>
-                        <p>No image available</p>
-                    </div>
-                    """))
-                
-                # Quick nutrition facts
-                display(HTML("<h3 style='color:#667eea; margin-bottom: 15px;'>Nutrition Facts (per 100g)</h3>"))
-                
-                nutrition_html = """
-                <div class="info-card">
-                """
-                
-                nutrients = {
-                    'Energy': "{} kJ".format(nutriments.get('energy_100g', 0)),
-                    'Sugar': "{}g".format(nutriments.get('sugars_100g', 0)),
-                    'Fat': "{}g".format(nutriments.get('fat_100g', 0)),
-                    'Saturated Fat': "{}g".format(nutriments.get('saturated-fat_100g', 0)),
-                    'Salt': "{}g".format(nutriments.get('salt_100g', 0)),
-                    'Fiber': "{}g".format(nutriments.get('fiber_100g', 0)),
-                    'Protein': "{}g".format(nutriments.get('proteins_100g', 0))
-                }
-                
-                for nutrient, value in nutrients.items():
-                    nutrition_html += f"""
-                    <div class="nutrition-fact">
-                        <span><strong>{nutrient}</strong></span>
-                        <span>{value}</span>
-                    </div>
-                    """
-                
-                nutrition_html += "</div>"
-                display(HTML(nutrition_html))
-            
-            # Display the two columns
-            display(widgets.HBox([col1, col2]))
-    
-    def render_analysis_tab(self):
-        """Render the analysis tab content"""
-        with self.tab_outputs['analysis']:
-            clear_output()
-            
-            if not self.current_product:
-                display(HTML("""
-                <div style='text-align: center; padding: 40px;'>
-                    <h3>👆 Scan a product to get started</h3>
-                    <p>Enter a barcode above to analyze a food product</p>
-                </div>
-                """))
-                return
-            
-            product_info = self.current_product['info']
-            health_score = self.current_product['score']
-            score_components = self.current_product['score_components']
-            
-            # Create a visualization of the score breakdown
-            display(HTML("<h2 class='section-title'>Nutritional Analysis</h2>"))
-            display(HTML("<h3 style='color:#667eea; margin-bottom: 15px;'>Score Breakdown</h3>"))
-            
-            max_points = {
-                'energy': 15, 'sugar': 15, 'fat': 15, 'saturated_fat': 10,
-                'salt': 10, 'fiber': 10, 'protein': 10, 'additives': 10, 'ingredient_quality': 5
-            }
-            
-            # Create a horizontal bar chart for score components
-            categories = []
-            scores = []
-            max_scores = []
-            
-            for category, score in score_components.items():
-                categories.append(category.replace('_', ' ').title())
-                scores.append(score)
-                max_scores.append(max_points[category])
-            
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                y=categories,
-                x=scores,
-                name='Actual Score',
-                orientation='h',
-                marker=dict(color='#667eea')
-            ))
-            fig.add_trace(go.Bar(
-                y=categories,
-                x=[max_scores[i] - scores[i] for i in range(len(scores))],
-                name='Remaining',
-                orientation='h',
-                marker=dict(color='#dfe6e9')
-            ))
-            
-            fig.update_layout(
-                barmode='stack',
-                title='Health Score Breakdown',
-                xaxis_title='Points',
-                yaxis_title='Category',
-                height=400,
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                font=dict(color='#2c3e50')
-            )
-            
-            fig.show()
-            
-            # Add detailed explanations
-            display(HTML("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Detailed Analysis</h3>"))
-            
-            explanations_html = """
-            <div class="info-card">
-            """
-            
-            for explanation in self.current_product['explanations']:
-                # Color code based on positive/negative
-                if "Excellent" in explanation:
-                    color = "#28a745"
-                    icon = "✓"
-                elif "Good" in explanation:
-                    color = "#2ecc71"
-                    icon = "✓"
-                elif "Fair" in explanation:
-                    color = "#f39c12"
-                    icon = "⚠"
-                else:
-                    color = "#e74c3c"
-                    icon = "✗"
-                
-                explanations_html += f"""
-                <div style='border-left: 4px solid {color}; padding-left: 15px; margin: 15px 0;'>
-                    <p style='margin: 0;'><strong>{icon} {explanation.split(':')[0]}:</strong> {explanation.split(':')[1] if ':' in explanation else explanation}</p>
-                </div>
-                """
-            
-            explanations_html += "</div>"
-            display(HTML(explanations_html))
-    
-    def render_ingredients_tab(self):
-        """Render the ingredients tab content"""
-        with self.tab_outputs['ingredients']:
-            clear_output()
-            
-            if not self.current_product:
-                display(HTML("""
-                <div style='text-align: center; padding: 40px;'>
-                    <h3>👆 Scan a product to get started</h3>
-                    <p>Enter a barcode above to analyze a food product</p>
-                </div>
-                """))
-                return
-            
-            product_info = self.current_product['info']
-            ingredients_list = extract_ingredients_list(product_info)
-            
-            # Display ingredients with color coding
-            display(HTML("<h2 class='section-title'>Ingredients Analysis</h2>"))
-            display(HTML("<h3 style='color:#667eea; margin-bottom: 15px;'>Ingredients</h3>"))
-            
-            positive_keywords = ['whole grain', 'whole wheat', 'organic', 'natural', 'fresh', 'fruit', 'vegetable', 'vitamin', 'mineral']
-            negative_keywords = ['artificial', 'preservative', 'hydrogenated', 'syrup', 'processed', 'additive', 'color', 'flavor']
-            
-            ingredients_html = """
-            <div class="info-card">
-            """
-            
-            for i, ingredient in enumerate(ingredients_list, 1):
-                # Check if ingredient contains positive or negative keywords
-                ingredient_lower = ingredient.lower()
-                is_positive = any(keyword in ingredient_lower for keyword in positive_keywords)
-                is_negative = any(keyword in ingredient_lower for keyword in negative_keywords)
-                
-                if is_positive:
-                    ingredients_html += f'<p class="ingredient-positive">{i}. {ingredient}</p>'
-                elif is_negative:
-                    ingredients_html += f'<p class="ingredient-negative">{i}. {ingredient}</p>'
-                else:
-                    ingredients_html += f'<p class="ingredient-neutral">{i}. {ingredient}</p>'
-            
-            ingredients_html += "</div>"
-            display(HTML(ingredients_html))
-            
-            # Add additives information
-            additives = product_info.get('additives', [])
-            if additives:
-                display(HTML("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Additives</h3>"))
-                
-                additives_html = """
-                <div class="info-card">
-                    <p>This product contains the following additives:</p>
-                    <ul>
-                """
-                
-                for additive in additives:
-                    additives_html += f"<li>{additive}</li>"
-                
-                additives_html += """
-                    </ul>
-                </div>
-                """
-                display(HTML(additives_html))
-            
-            # Add ingredient quality summary
-            display(HTML("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Ingredient Summary</h3>"))
-            
-            positive_count = sum(1 for ingredient in ingredients_list 
-                                if any(keyword in ingredient.lower() for keyword in positive_keywords))
-            negative_count = sum(1 for ingredient in ingredients_list 
-                                if any(keyword in ingredient.lower() for keyword in negative_keywords))
-            
-            stats_html = f"""
-            <div class="metrics-container">
-                <div class="metric-circle" style="border-color: #667eea;">
-                    <h3 style="color: #667eea;">{len(ingredients_list)}</h3>
-                    <p>Total Ingredients</p>
-                </div>
-                <div class="metric-circle" style="border-color: #28a745;">
-                    <h3 style="color: #28a745;">{positive_count}</h3>
-                    <p>Positive Ingredients</p>
-                </div>
-                <div class="metric-circle" style="border-color: #e74c3c;">
-                    <h3 style="color: #e74c3c;">{negative_count}</h3>
-                    <p>Negative Ingredients</p>
-                </div>
-            </div>
-            """
-            
-            display(HTML(stats_html))
-    
-    def render_history_tab(self):
-        """Render the history tab content"""
-        with self.tab_outputs['history']:
-            clear_output()
-            
-            display(HTML("<h2 class='section-title'>Scan History</h2>"))
-            
-            if not self.history:
-                display(HTML("""
-                <div style='text-align: center; padding: 40px;'>
-                    <h3>No scan history yet</h3>
-                    <p>Scan a product to start building history</p>
-                </div>
-                """))
-                return
-            
-            # Create a table of scan history
-            history_html = """
-            <div class="info-card">
-                <h3 style='color:#667eea; margin-top: 0;'>Product History</h3>
-            """
-            
-            for item in self.history:
-                score_class = "score-excellent"
-                if item['score'] < 80:
-                    score_class = "score-good"
-                if item['score'] < 60:
-                    score_class = "score-fair"
-                if item['score'] < 40:
-                    score_class = "score-poor"
-                if item['score'] < 20:
-                    score_class = "score-very-poor"
-                
-                history_html += f"""
-                <div class="history-item">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h4 style="margin: 0 0 5px 0;">{item['name']}</h4>
-                            <p style="margin: 0; color: #7f8c8d;">{item['timestamp']} • {item.get('brand', 'Unknown')}</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 24px; font-weight: 700;" class="{score_class}">{item['score']}/100</div>
-                            <button style="background: #667eea; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 5px;">
-                                View Details
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                """
-            
-            history_html += "</div>"
-            
-            display(HTML(history_html))
+        .score-excellent {
+            color: #28a745;
+        }
+        
+        .score-good {
+            color: #17a2b8;
+        }
+        
+        .score-fair {
+            color: #ffc107;
+        }
+        
+        .score-poor {
+            color: #fd7e14;
+        }
+        
+        .score-very-poor {
+            color: #dc3545;
+        }
+        
+        .ingredient-positive {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .ingredient-negative {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .ingredient-neutral {
+            color: #6c757d;
+        }
+        
+        .history-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            border-left: 4px solid #667eea;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f3f4;
+        }
+        
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 24px;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            border-radius: 4px 4px 0px 0px;
+            gap: 1px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background-color: #667eea;
+            color: white;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-# Create and display the dashboard
-dashboard = FoodScannerDashboard()
+# Initialize session state
+def init_session_state():
+    if 'history' not in st.session_state:
+        st.session_state.history = []
+    if 'current_product' not in st.session_state:
+        st.session_state.current_product = None
+
+# Header section
+def render_header():
+    st.markdown("""
+    <div class="dashboard-header">
+        <h1>🍎 NutriScan Pro</h1>
+        <p>Advanced Food Intelligence & Nutritional Analysis</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Scan section
+def render_scan_section():
+    st.markdown("""
+    <div class="scan-section">
+        <h2>Scan a Product</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        barcode = st.text_input("", placeholder="Enter product barcode...", label_visibility="collapsed")
+    with col2:
+        if st.button("Scan Product", use_container_width=True):
+            if barcode:
+                with st.spinner("Scanning product..."):
+                    scan_product(barcode)
+            else:
+                st.error("Please enter a barcode")
+
+# Product scanning function
+def scan_product(barcode):
+    product_info = get_product_info_openfoodfacts(barcode)
+    
+    if product_info.get('success', False):
+        # Calculate health score
+        health_score, explanations, score_components = calculate_health_score(product_info)
+        
+        # Add to history
+        st.session_state.history.append({
+            'barcode': barcode,
+            'name': product_info.get('name', 'Unknown'),
+            'score': health_score,
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+            **product_info
+        })
+        
+        st.session_state.current_product = {
+            'info': product_info,
+            'score': health_score,
+            'explanations': explanations,
+            'score_components': score_components
+        }
+        
+        st.success(f"Successfully scanned: {product_info.get('name', 'Unknown')}")
+    else:
+        st.error(f"Error: {product_info.get('error', 'Unknown error')}")
+
+# Overview tab
+def render_overview_tab():
+    if not st.session_state.current_product:
+        st.info("👆 Scan a product to get started")
+        return
+    
+    product_info = st.session_state.current_product['info']
+    health_score = st.session_state.current_product['score']
+    
+    # Create metrics circles
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #667eea; margin: 0 auto;">
+            <h3 style="color: #667eea; margin: 0; font-size: 28px;">{health_score}/100</h3>
+            <p style="margin: 0; color: #6c757d;">Health Score</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        nutrition_grade = product_info.get('nutrition_grade', 'N/A').upper()
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #3282b8; margin: 0 auto;">
+            <h3 style="color: #3282b8; margin: 0; font-size: 28px;">{nutrition_grade}</h3>
+            <p style="margin: 0; color: #6c757d;">Nutrition Grade</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        additives_count = len(product_info.get('additives', []))
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #bbe1fa; margin: 0 auto;">
+            <h3 style="color: #1b262c; margin: 0; font-size: 28px;">{additives_count}</h3>
+            <p style="margin: 0; color: #6c757d;">Additives</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Two-column layout
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Product information
+        st.markdown(f"""
+        <div class="info-card">
+            <h3>Product Information</h3>
+            <p><strong>Product:</strong> {product_info.get('name', 'Unknown')}</p>
+            <p><strong>Brand:</strong> {product_info.get('brand', 'Unknown')}</p>
+            <p><strong>Category:</strong> {product_info.get('category', 'Unknown')}</p>
+            <p><strong>Barcode:</strong> {product_info.get('barcode', 'Unknown')}</p>
+            <p><strong>Data Source:</strong> {product_info.get('source', 'Open Food Facts')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Health score interpretation
+        score_class = "score-excellent"
+        score_text = "Excellent"
+        if health_score < 80:
+            score_class = "score-good"
+            score_text = "Good"
+        if health_score < 60:
+            score_class = "score-fair"
+            score_text = "Fair"
+        if health_score < 40:
+            score_class = "score-poor"
+            score_text = "Poor"
+        if health_score < 20:
+            score_class = "score-very-poor"
+            score_text = "Very Poor"
+        
+        # Create a circular progress indicator using SVG
+        circumference = 2 * math.pi * 40
+        offset = circumference - (health_score / 100) * circumference
+        
+        st.markdown(f"""
+        <div class="info-card">
+            <h3>Health Assessment</h3>
+            <div style="display: flex; align-items: center;">
+                <div style="position: relative; width: 100px; height: 100px; margin-right: 20px;">
+                    <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+                        <circle class="progress-ring-circle" stroke="#ecf0f1" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                        <circle class="progress-ring-circle" stroke="#667eea" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" 
+                                stroke-dasharray="{circumference} {circumference}" style="stroke-dashoffset: {offset}"/>
+                        <text x="50" y="55" font-size="20" text-anchor="middle" fill="#667eea" font-weight="bold">{health_score}</text>
+                    </svg>
+                </div>
+                <div>
+                    <p>This product has a <span class="{score_class}">{score_text}</span> nutritional quality score.</p>
+                    <p>Based on analysis of ingredients and nutritional content.</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        # Product image
+        image_url = product_info.get('image_url', '')
+        if image_url:
+            st.image(image_url, caption="Product Image", use_column_width=True)
+        else:
+            st.info("No image available for this product")
+        
+        # Quick nutrition facts
+        st.markdown("<h3 style='color:#667eea; margin-bottom: 15px;'>Nutrition Facts (per 100g)</h3>", unsafe_allow_html=True)
+        
+        nutriments = product_info.get('nutriments', {})
+        nutrients = {
+            'Energy': "{} kJ".format(nutriments.get('energy_100g', 0)),
+            'Sugar': "{}g".format(nutriments.get('sugars_100g', 0)),
+            'Fat': "{}g".format(nutriments.get('fat_100g', 0)),
+            'Saturated Fat': "{}g".format(nutriments.get('saturated-fat_100g', 0)),
+            'Salt': "{}g".format(nutriments.get('salt_100g', 0)),
+            'Fiber': "{}g".format(nutriments.get('fiber_100g', 0)),
+            'Protein': "{}g".format(nutriments.get('proteins_100g', 0))
+        }
+        
+        nutrition_html = """
+        <div class="info-card">
+        """
+        
+        for nutrient, value in nutrients.items():
+            nutrition_html += f"""
+            <div class="nutrition-fact">
+                <span><strong>{nutrient}</strong></span>
+                <span>{value}</span>
+            </div>
+            """
+        
+        nutrition_html += "</div>"
+        st.markdown(nutrition_html, unsafe_allow_html=True)
+
+# Analysis tab
+def render_analysis_tab():
+    if not st.session_state.current_product:
+        st.info("👆 Scan a product to get started")
+        return
+    
+    product_info = st.session_state.current_product['info']
+    health_score = st.session_state.current_product['score']
+    score_components = st.session_state.current_product['score_components']
+    
+    # Create a visualization of the score breakdown
+    st.markdown("<h2 class='section-title'>Nutritional Analysis</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#667eea; margin-bottom: 15px;'>Score Breakdown</h3>", unsafe_allow_html=True)
+    
+    max_points = {
+        'energy': 15, 'sugar': 15, 'fat': 15, 'saturated_fat': 10,
+        'salt': 10, 'fiber': 10, 'protein': 10, 'additives': 10, 'ingredient_quality': 5
+    }
+    
+    # Create a horizontal bar chart for score components
+    categories = []
+    scores = []
+    max_scores = []
+    
+    for category, score in score_components.items():
+        categories.append(category.replace('_', ' ').title())
+        scores.append(score)
+        max_scores.append(max_points[category])
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=categories,
+        x=scores,
+        name='Actual Score',
+        orientation='h',
+        marker=dict(color='#667eea')
+    ))
+    fig.add_trace(go.Bar(
+        y=categories,
+        x=[max_scores[i] - scores[i] for i in range(len(scores))],
+        name='Remaining',
+        orientation='h',
+        marker=dict(color='#dfe6e9')
+    ))
+    
+    fig.update_layout(
+        barmode='stack',
+        title='Health Score Breakdown',
+        xaxis_title='Points',
+        yaxis_title='Category',
+        height=400,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='#2c3e50')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Add detailed explanations
+    st.markdown("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Detailed Analysis</h3>", unsafe_allow_html=True)
+    
+    explanations_html = """
+    <div class="info-card">
+    """
+    
+    for explanation in st.session_state.current_product['explanations']:
+        # Color code based on positive/negative
+        if "Excellent" in explanation:
+            color = "#28a745"
+            icon = "✓"
+        elif "Good" in explanation:
+            color = "#2ecc71"
+            icon = "✓"
+        elif "Fair" in explanation:
+            color = "#f39c12"
+            icon = "⚠"
+        else:
+            color = "#e74c3c"
+            icon = "✗"
+        
+        explanations_html += f"""
+        <div style='border-left: 4px solid {color}; padding-left: 15px; margin: 15px 0;'>
+            <p style='margin: 0;'><strong>{icon} {explanation.split(':')[0]}:</strong> {explanation.split(':')[1] if ':' in explanation else explanation}</p>
+        </div>
+        """
+    
+    explanations_html += "</div>"
+    st.markdown(explanations_html, unsafe_allow_html=True)
+
+# Ingredients tab
+def render_ingredients_tab():
+    if not st.session_state.current_product:
+        st.info("👆 Scan a product to get started")
+        return
+    
+    product_info = st.session_state.current_product['info']
+    ingredients_list = extract_ingredients_list(product_info)
+    
+    # Display ingredients with color coding
+    st.markdown("<h2 class='section-title'>Ingredients Analysis</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#667eea; margin-bottom: 15px;'>Ingredients</h3>", unsafe_allow_html=True)
+    
+    positive_keywords = ['whole grain', 'whole wheat', 'organic', 'natural', 'fresh', 'fruit', 'vegetable', 'vitamin', 'mineral']
+    negative_keywords = ['artificial', 'preservative', 'hydrogenated', 'syrup', 'processed', 'additive', 'color', 'flavor']
+    
+    ingredients_html = """
+    <div class="info-card">
+    """
+    
+    for i, ingredient in enumerate(ingredients_list, 1):
+        # Check if ingredient contains positive or negative keywords
+        ingredient_lower = ingredient.lower()
+        is_positive = any(keyword in ingredient_lower for keyword in positive_keywords)
+        is_negative = any(keyword in ingredient_lower for keyword in negative_keywords)
+        
+        if is_positive:
+            ingredients_html += f'<p class="ingredient-positive">{i}. {ingredient}</p>'
+        elif is_negative:
+            ingredients_html += f'<p class="ingredient-negative">{i}. {ingredient}</p>'
+        else:
+            ingredients_html += f'<p class="ingredient-neutral">{i}. {ingredient}</p>'
+    
+    ingredients_html += "</div>"
+    st.markdown(ingredients_html, unsafe_allow_html=True)
+    
+    # Add additives information
+    additives = product_info.get('additives', [])
+    if additives:
+        st.markdown("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Additives</h3>", unsafe_allow_html=True)
+        
+        additives_html = """
+        <div class="info-card">
+            <p>This product contains the following additives:</p>
+            <ul>
+        """
+        
+        for additive in additives:
+            additives_html += f"<li>{additive}</li>"
+        
+        additives_html += """
+            </ul>
+        </div>
+        """
+        st.markdown(additives_html, unsafe_allow_html=True)
+    
+    # Add ingredient quality summary
+    st.markdown("<h3 style='color:#667eea; margin-top: 30px; margin-bottom: 15px;'>Ingredient Summary</h3>", unsafe_allow_html=True)
+    
+    positive_count = sum(1 for ingredient in ingredients_list 
+                        if any(keyword in ingredient.lower() for keyword in positive_keywords))
+    negative_count = sum(1 for ingredient in ingredients_list 
+                        if any(keyword in ingredient.lower() for keyword in negative_keywords))
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #667eea; margin: 0 auto;">
+            <h3 style="color: #667eea; margin: 0; font-size: 28px;">{len(ingredients_list)}</h3>
+            <p style="margin: 0; color: #6c757d;">Total Ingredients</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #28a745; margin: 0 auto;">
+            <h3 style="color: #28a745; margin: 0; font-size: 28px;">{positive_count}</h3>
+            <p style="margin: 0; color: #6c757d;">Positive Ingredients</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="metric-circle" style="border-color: #e74c3c; margin: 0 auto;">
+            <h3 style="color: #e74c3c; margin: 0; font-size: 28px;">{negative_count}</h3>
+            <p style="margin: 0; color: #6c757d;">Negative Ingredients</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# History tab
+def render_history_tab():
+    st.markdown("<h2 class='section-title'>Scan History</h2>", unsafe_allow_html=True)
+    
+    if not st.session_state.history:
+        st.info("No scan history yet. Scan a product to start building history.")
+        return
+    
+    # Create a table of scan history
+    history_html = """
+    <div class="info-card">
+        <h3 style='color:#667eea; margin-top: 0;'>Product History</h3>
+    """
+    
+    for item in st.session_state.history:
+        score_class = "score-excellent"
+        if item['score'] < 80:
+            score_class = "score-good"
+        if item['score'] < 60:
+            score_class = "score-fair"
+        if item['score'] < 40:
+            score_class = "score-poor"
+        if item['score'] < 20:
+            score_class = "score-very-poor"
+        
+        history_html += f"""
+        <div class="history-item">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h4 style="margin: 0 0 5px 0;">{item['name']}</h4>
+                    <p style="margin: 0; color: #7f8c8d;">{item['timestamp']} • {item.get('brand', 'Unknown')}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 24px; font-weight: 700;" class="{score_class}">{item['score']}/100</div>
+                </div>
+            </div>
+        </div>
+        """
+    
+    history_html += "</div>"
+    
+    st.markdown(history_html, unsafe_allow_html=True)
+
+# Main app function
+def main():
+    # Load CSS and initialize session state
+    load_css()
+    init_session_state()
+    
+    # Render header and scan section
+    render_header()
+    render_scan_section()
+    
+    # Create tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Analysis", "Ingredients", "History"])
+    
+    with tab1:
+        render_overview_tab()
+    
+    with tab2:
+        render_analysis_tab()
+    
+    with tab3:
+        render_ingredients_tab()
+    
+    with tab4:
+        render_history_tab()
+
+if __name__ == "__main__":
+    main()
