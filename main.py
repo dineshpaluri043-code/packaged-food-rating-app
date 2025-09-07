@@ -473,7 +473,11 @@ def render_scan_section():
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        barcode = st.text_input("", placeholder="Enter product barcode...", label_visibility="collapsed")
+        barcode = st.text_input(
+            "Barcode",
+            placeholder="Enter product barcode...",
+            label_visibility="collapsed"
+        )
     with col2:
         if st.button("Scan Product", use_container_width=True):
             if barcode:
@@ -608,7 +612,7 @@ def render_overview_tab():
         # Product image
         image_url = product_info.get('image_url', '')
         if image_url:
-            st.image(image_url, caption="Product Image", use_column_width=True)
+            st.image(image_url, caption="Product Image", use_container_width=True)
         else:
             st.info("No image available for this product")
         
